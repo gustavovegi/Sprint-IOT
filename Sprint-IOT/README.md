@@ -2,6 +2,8 @@ MINDVEST - Reconhecimento facial APP
 
 Este projeto implementa um sistema simples de reconhecimento facial em Python, utilizando as bibliotecas dlib, OpenCV e numpy.
 
+Podendo ser usado em um FaceID do app que estamos montando
+
 O sistema permite:
 
 Reconhecimento em tempo real via webcam (opcional, se tiver câmera)
@@ -53,10 +55,8 @@ Execute o script:
 
 python faceID.py
 
-
 Você verá o menu:
 
-=== MENU ===
 1 - Cadastrar rosto por foto
 2 - Validar rosto por foto
 3 - Usar webcam (tempo real)
