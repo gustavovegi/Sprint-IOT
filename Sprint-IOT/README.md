@@ -1,126 +1,139 @@
-MINDVEST - Reconhecimento facial APP
+ API de Reconhecimento Facial com FastAPI
 
-Este projeto implementa um sistema simples de reconhecimento facial em Python, utilizando as bibliotecas dlib, OpenCV e numpy.
+Esta API permite **cadastrar e validar rostos de usuários** usando OpenCV e Dlib. Cada usuário é identificado por um vetor facial gerado pelo modelo `dlib_face_recognition_resnet_model_v1.dat`. Além disso, a API gera **tokens JWT** para usuários conhecidos.
 
-Podendo ser usado em um FaceID do app que estamos montando
+---
 
-O sistema permite:
+##  Estrutura do Projeto
 
-Reconhecimento em tempo real via webcam (opcional, se tiver câmera)
-
-Cadastrar rostos por foto (sem precisar de webcam).
-
-Validar rostos por foto, comparando com o banco de dados.
-
-Os rostos cadastrados ficam armazenados em um arquivo db.pkl.
-
-Estrutura do Projeto
-Sprint-IOT/
-│-- faceID.py        # Script principal
-│-- db.pkl           # Banco de dados (gerado automaticamente)
-│-- shape_predictor_5_face_landmarks.dat
-│-- dlib_face_recognition_resnet_model_v1.dat
-│-- README.md
-
-Instalação
-
-Instale as dependências:
-
-pip install opencv-python dlib numpy
-
-
-Observação: no Windows, a instalação do dlib pode ser mais difícil. Em caso de erro, instale via wheel pré-compilado:
-
-Descubra sua versão do Python (ex.: 3.11, 3.12).
-
-Baixe o .whl correspondente em: https://pypi.org/project/dlib/#files
-
-Instale com:
-
-pip install dlib-19.xx-cp311-cp311-win_amd64.whl
-
-Modelos do Dlib
-
-Baixe os arquivos de modelos e coloque-os na mesma pasta do script:
-
+faceID.py # Arquivo principal da API
+db.pkl # Banco de dados dos vetores faciais
 shape_predictor_5_face_landmarks.dat
-
 dlib_face_recognition_resnet_model_v1.dat
 
-Descompacte os .bz2 e use os arquivos .dat.
+yaml
+Copiar código
 
-Como rodar
+---
 
-Execute o script:
+##  Requisitos
 
-python faceID.py
+- Python 3.8+
+- Pacotes Python:
 
-Você verá o menu:
+```bash
+pip install fastapi uvicorn opencv-python dlib numpy pyjwt
+Modelos Dlib:
 
-1 - Cadastrar rosto por foto
-2 - Validar rosto por foto
-3 - Usar webcam (tempo real)
-4 - Sair
+shape_predictor_5_face_landmarks.dat → detecta landmarks faciais
 
-Funcionalidades
-1. Cadastrar rosto por foto
+dlib_face_recognition_resnet_model_v1.dat → gera vetor facial
 
-Escolha a opção 1.
-Digite o nome da pessoa e o caminho da foto (exemplo: joao.jpg).
+Configurações
+PREDICTOR: caminho para o modelo de landmarks faciais
 
-Exemplo:
+RECOG: caminho para o modelo de reconhecimento facial
 
-Digite o nome da pessoa: Joao
-Digite o caminho da foto: joao.jpg
-Usuário cadastrado: Joao
+DB_FILE: arquivo do banco de dados (pickle)
 
+THRESH: limite de distância Euclidiana para considerar um rosto conhecido
 
-O vetor facial é salvo no arquivo db.pkl.
+SECRET_KEY: chave secreta para gerar JWT
 
-2. Validar rosto por foto
+Funções Principais
+extract_vecs_from_image(img)
+Extrai vetores faciais de uma imagem.
 
-Escolha a opção 2.
-Digite o caminho da foto para validar.
+Entrada: imagem OpenCV (BGR)
 
-Se o rosto já estiver cadastrado:
+Saída: lista de tuplas (vetor, rect)
 
-Resultado: Joao
+save_db()
+Salva o dicionário db no arquivo DB_FILE.
 
+gerar_token(nome)
+Gera um JWT válido por 1 hora para o usuário identificado pelo nome.
 
-Se não estiver:
+Endpoints
+POST /cadastrar
+Descrição: cadastra um novo usuário com foto
 
-Resultado: Desconhecido
+Parâmetros:
 
-3. Reconhecimento em tempo real (Webcam)
+nome (string) → nome do usuário
 
-Escolha a opção 3.
+foto (file) → imagem do rosto
 
-Abre uma janela com a câmera.
+Exemplo com curl:
 
-Mostra o nome da pessoa reconhecida.
+bash
+Copiar código
+curl -X POST "http://127.0.0.1:8000/cadastrar" \
+  -F "nome=Gustavo" \
+  -F "foto=@/caminho/para/foto.jpg"
+Resposta JSON:
 
-Pressione C para cadastrar uma nova pessoa direto da câmera.
-
-Pressione Q para sair.
-
-Observação: se não houver webcam, esta opção não funcionará.
-
-4. Sair
-
-Encerra o programa.
-
-Banco de Dados
-
-O arquivo db.pkl armazena os rostos cadastrados no formato pickle.
-Cada chave é o nome da pessoa e cada valor é o vetor facial (128 floats).
-
-Exemplo simplificado:
-
+json
+Copiar código
 {
-  "Joao": [0.123, -0.044, 0.532, ...],
-  "Maria": [0.222, -0.137, 0.421, ...]
+  "msg": "Usuário Gustavo cadastrado com sucesso."
 }
+Erros Possíveis:
+
+Nenhuma imagem válida
+
+Nenhum rosto detectado
+
+POST /validar
+Descrição: valida a identidade de um rosto enviado
+
+Parâmetros:
+
+foto (file) → imagem do rosto
+
+Exemplo com curl:
+
+bash
+Copiar código
+curl -X POST "http://127.0.0.1:8000/validar" \
+  -F "foto=@/caminho/para/foto.jpg"
+Resposta JSON:
+
+json
+Copiar código
+{
+  "faces": [
+    {
+      "nome": "Nome do usuário ou 'Desconhecido'",
+      "distancia": 0.45,
+      "bbox": [left, top, right, bottom],
+      "token": "JWT token ou null"
+    }
+  ]
+}
+Erros Possíveis:
+
+Nenhuma imagem válida
+
+Nenhum rosto detectado
+
+Execução
+Rode a API localmente com:
+
+bash
+Copiar código
+uvicorn faceID:app --reload
+A documentação automática do FastAPI fica disponível em:
+
+arduino
+Copiar código
+http://127.0.0.1:8000/docs
 
 Observações
+Não rode uvicorn.run dentro do script — use apenas o comando do terminal para evitar refresh infinito.
 
-Se apagar o db.pkl, o banco será recriado vazio.
+Banco de dados é persistente em db.pkl.
+
+JWT é gerado apenas para usuários conhecidos.
+
+Múltiplos rostos na mesma foto: apenas o maior rosto é usado no cadastro.
